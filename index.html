@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script src="/sdk/app-page-sdk.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <style>
+      /* ══ BVG Brand Tokens ══ */
+      :root {
+        --bvg-yellow:      #FFCC00;
+        --bvg-yellow-dark: #E6B800;
+        --bvg-black:       #1A1A1A;
+        --bvg-gray:        #4A4A4A;
+        --bvg-light:       #F7F7F7;
+        --success-green:   #00843d;
+        --error-red:       #D0021B;
+        --radius:          14px;
+        --shadow:          0 6px 32px rgba(0,0,0,0.10);
+      }
+
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      html, body {
+        height: 100%;
+        background: #F0F0F0;
+        font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif;
+        -webkit-text-size-adjust: 100%;
+        overflow-x: hidden;
+      }
+
+      /* ══ SCREENS ══ */
+      .screen {
+        display: none;
+        flex-direction: column;
+        min-height: 100vh;
+        align-items: center;
+      }
+      .screen.active { display: flex; }
+
+      /* ══ LOGO BAR ══ */
+      .logo-bar {
+        width: 100%;
+        background: var(--bvg-gray);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 14px 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        flex-shrink: 0;
+      }
+      .logo-bar img { width: 100px; height: auto; display: block; }
+
+      /* ══ DEMO BADGE ══ */
+      .demo-badge {
+        background: var(--bvg-black);
+        color: var(--bvg-yellow);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        padding: 4px 14px;
+        text-align: center;
+        width: 100%;
+        flex-shrink: 0;
+      }
+
+      /* ══ PAGE BODY ══ */
+      .page-body {
+        flex: 1;
+        width: 100%;
+        max-width: 480px;
+        padding: 20px 16px 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        margin: 0 auto;
+      }
+
+      /* ══ CARD ══ */
+      .card {
+        background: #fff;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        width: 100%;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity 0.4s ease, transform 0.4s ease;
+        display: none;
+      }
+      .card.visible { opacity: 1; transform: translateY(0); display: block; }
+
+      .card-header {
+        background: var(--bvg-black);
+        color: #fff;
+        padding: 12px 18px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .card-body { padding: 18px; }
+
+      /* ══ FORM INPUTS ══ */
+      .input-group { margin-bottom: 14px; position: relative; }
+      .input-group:last-child { margin-bottom: 0; }
+      .input-group label {
+        display: block; font-size: 12px; font-weight: 600;
+        color: var(--bvg-gray); margin-bottom: 6px;
+      }
+      .input-group input {
+        width: 100%; padding: 14px 16px; border: 1.5px solid #ddd;
+        border-radius: 10px; font-family: inherit; font-size: 16px;
+        color: var(--bvg-black); background: #fff;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        -webkit-appearance: none;
+      }
+      .input-group input:focus {
+        border-color: var(--bvg-yellow);
+        box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.25); outline: none;
+      }
+      .input-group input.loaded { background: #f9f9f9; border-color: #ccc; }
+
+      /* ══ TICKET VISUAL ══ */
+      .ticket-visual {
+        background: var(--bvg-yellow); border-radius: 10px; padding: 16px;
+        display: flex; align-items: center; gap: 16px; margin-bottom: 18px;
+      }
+      .ticket-icon {
+        width: 50px; height: 50px; background: var(--bvg-black);
+        border-radius: 50%; display: flex; align-items: center;
+        justify-content: center; flex-shrink: 0;
+      }
+      .ticket-icon svg { width: 26px; height: 26px; }
+      .ticket-info h2 { font-size: 18px; font-weight: 800; color: var(--bvg-black); line-height: 1.2; }
+      .ticket-info p { font-size: 13px; color: var(--bvg-gray); margin-top: 4px; }
+
+      /* ══ PRICE ROWS ══ */
+      .price-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 10px 0; border-bottom: 1px solid #eee; font-size: 14px;
+        color: var(--bvg-gray);
+      }
+      .price-row:last-child { border-bottom: none; }
+      .price-row strong { color: var(--bvg-black); font-weight: 600; }
+      .price-row.total { margin-top: 4px; padding-top: 14px; border-top: 2px solid var(--bvg-black); border-bottom: none; }
+      .price-row.total .label { font-weight: 800; color: var(--bvg-black); font-size: 15px; }
+      .price-row.total .amount { font-size: 24px; font-weight: 800; color: var(--bvg-black); }
+
+      /* ══ FINGERPRINT SECTION ══ */
+      .fp-wrapper { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 10px 0 4px; }
+      .fp-label { font-size: 14px; color: var(--bvg-gray); text-align: center; line-height: 1.5; }
+      .fp-btn-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+
+      @keyframes scan-ring { 0% { transform: scale(1); opacity: 0.75; } 100% { transform: scale(1.7); opacity: 0; } }
+      .fp-ring {
+        position: absolute; inset: 0; border-radius: 50%; border: 3px solid var(--bvg-yellow);
+        pointer-events: none; opacity: 0;
+      }
+      .scanning .fp-ring { animation: scan-ring 0.9s ease-out infinite; }
+
+      .fp-btn {
+        width: 100px; height: 100px; background: var(--bvg-yellow); border: none;
+        border-radius: 50%; cursor: pointer; display: flex; align-items: center;
+        justify-content: center; box-shadow: 0 4px 20px rgba(255,204,0,0.5);
+        transition: transform 0.15s, box-shadow 0.15s, background 0.3s;
+        -webkit-tap-highlight-color: transparent; position: relative; overflow: hidden;
+      }
+      .fp-btn:hover { transform: scale(1.04); box-shadow: 0 6px 28px rgba(255,204,0,0.65); }
+      .fp-btn:active { transform: scale(0.96); }
+      .fp-btn svg { width: 48px; height: 48px; position: relative; z-index: 1; transition: opacity 0.2s; }
+      .fp-btn::after {
+        content: ''; position: absolute; inset: 0; border-radius: 50%;
+        background: rgba(255,255,255,0.45); opacity: 0; transform: scale(0);
+      }
+      .fp-btn.ripple::after { opacity: 1; transform: scale(1); transition: transform 0.4s ease-out, opacity 0.4s ease-out; }
+
+      .progress-bar-wrap { width: 100%; height: 5px; background: #eee; border-radius: 3px; overflow: hidden; display: none; }
+      .progress-bar-wrap.visible { display: block; }
+      @keyframes progress-fill { from { width: 0%; } to { width: 100%; } }
+      .progress-bar-inner { height: 100%; background: var(--bvg-yellow); border-radius: 3px; animation: progress-fill 1.8s ease-out forwards; }
+
+      .status-msg { font-size: 13px; font-weight: 600; text-align: center; min-height: 20px; transition: color 0.2s; }
+      .status-msg.scanning { color: var(--bvg-gray); }
+      .status-msg.success { color: var(--success-green); }
+      .status-msg.error { color: var(--error-red); }
+      .fp-hint { font-size: 11px; color: #bbb; text-align: center; }
+
+      /* ══ CONFIRM BUTTON ══ */
+      .confirm-purchase-btn {
+        display: none; width: 100%; margin-top: 10px; padding: 16px;
+        background: var(--success-green); color: white; border: none;
+        border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer;
+        transition: background 0.2s;
+      }
+      .confirm-purchase-btn.visible { display: block; }
+      .confirm-purchase-btn:active { background: #006b32; }
+
+      /* ══ CONFIRM SCREEN ══ */
+      @keyframes pop-in { 0% { transform: scale(0.4); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+      .confirm-circle {
+        width: 90px; height: 90px; background: var(--success-green); border-radius: 50%;
+        display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
+        box-shadow: 0 4px 22px rgba(0,132,61,0.32); animation: pop-in 0.5s ease-out both;
+      }
+      .confirm-circle svg { width: 44px; height: 44px; }
+      .confirm-title { font-size: 22px; font-weight: 800; color: var(--bvg-black); text-align: center; margin-bottom: 6px; }
+      .confirm-sub { font-size: 14px; color: var(--bvg-gray); text-align: center; line-height: 1.55; margin-bottom: 20px; }
+      .confirm-amount { background: var(--bvg-yellow); border-radius: 10px; padding: 14px 18px; text-align: center; margin-bottom: 18px; }
+      .confirm-amount .amount-label { font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--bvg-gray); margin-bottom: 4px; }
+      .confirm-amount .amount-value { font-size: 32px; font-weight: 800; color: var(--bvg-black); line-height: 1.1; }
+
+      .detail-row { display: flex; justify-content: space-between; align-items: flex-start; font-size: 13px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; gap: 12px; }
+      .detail-row:last-child { border-bottom: none; }
+      .detail-row .dl { color: var(--bvg-gray); }
+      .detail-row .dv { font-weight: 600; color: var(--bvg-black); text-align: right; word-break: break-word; }
+
+      /* ══ TICKET SCREEN (QR) ══ */
+      .qr-container { display: flex; flex-direction: column; align-items: center; width: 100%; }
+      .qr-code-box {
+        width: 220px; height: 220px; background: white; padding: 10px;
+        border: 2px solid var(--bvg-black); border-radius: 8px;
+        margin-bottom: 20px; display: flex; justify-content: center; align-items: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      }
+      .qr-code-box img { width: 100%; height: 100%; object-fit: contain; }
+
+      .download-btn {
+        display: block; width: 100%; margin-top: -10px; margin-bottom: 20px;
+        background: var(--bvg-gray); color: white; border: none;
+        border-radius: 8px; font-size: 14px; font-weight: 600; font-family: inherit;
+        padding: 12px; cursor: pointer; transition: background 0.2s;
+        text-align: center; text-decoration: none;
+      }
+      .download-btn:hover { background: var(--bvg-black); }
+      .download-btn svg { vertical-align: middle; margin-right: 8px; }
+
+      .status-pill {
+        display: inline-flex; align-items: center; gap: 8px;
+        background: #eee; padding: 8px 16px; border-radius: 20px;
+        font-size: 13px; color: var(--bvg-gray); margin-top: 10px;
+      }
+      .status-pill .spinner {
+        width: 14px; height: 14px; border: 2px solid #ccc;
+        border-top-color: var(--bvg-gray); border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      .countdown-wrap {
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        font-size: 12px; color: #aaa; margin-top: 10px;
+      }
+      .footer-note { font-size: 11px; color: #bbb; text-align: center; padding: 0 16px 28px; line-height: 1.55; }
+    </style>
+  </head>
+  <body>
+
+    <!-- ══════════════════════
+         SCREEN 1 — PAYMENT
+    ══════════════════════ -->
+    <div id="screen-payment" class="screen active">
+      <div class="logo-bar"><img src="https://upload.wikimedia.org/wikipedia/commons/b/bf/BVG_Logo_07.2021.svg" alt="BVG Logo" /></div>
+      <div class="demo-badge">⚠ DEMO MODE — LIVE DATA</div>
+
+      <div class="page-body">
+        <div class="card visible">
+          <div class="card-header">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFCC00" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg>
+            Your Ticket
+          </div>
+          <div class="card-body">
+            <div class="ticket-visual">
+              <div class="ticket-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#FFCC00" stroke-width="2"><rect x="2" y="7" width="20" height="13" rx="3"/><path d="M7 7V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><circle cx="7.5" cy="16" r="1.5" fill="#FFCC00"/><circle cx="16.5" cy="16" r="1.5" fill="#FFCC00"/></svg>
+              </div>
+              <div class="ticket-info">
+                <!-- Dynamic Content -->
+                <h2 id="api-ticket-name">Loading...</h2>
+                <p id="api-ticket-desc">Loading zones...</p>
+              </div>
+            </div>
+            <div class="price-row">
+              <span class="label">Ticket</span>
+              <strong id="api-ticket-row">Loading...</strong>
+            </div>
+            <div class="price-row">
+              <span class="label">Valid From</span>
+              <strong id="api-valid-from">Loading...</strong>
+            </div>
+            <div class="price-row"><span class="label">Payment Method</span><strong>🔒 Biometric</strong></div>
+            <div class="price-row total">
+              <span class="label">Total</span>
+              <span class="amount" id="api-price">0,00 €</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card visible">
+          <div class="card-header">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFCC00" stroke-width="2.5"><path d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04.054-.09A13.916 13.916 0 0 0 8 11a4 4 0 1 1 8 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0 0 15.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 0 0 8 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/></svg>
+            Scan to Load Data
+          </div>
+          <div class="card-body">
+            <div class="fp-wrapper">
+              <p class="fp-label">Tap the sensor to load your customer data.</p>
+              <div class="fp-btn-wrap" id="fp-btn-wrap">
+                <div class="fp-ring"></div>
+                <button class="fp-btn" id="fp-btn" onclick="startFingerprint()" aria-label="Scan Fingerprint">
+                  <svg id="fp-icon" viewBox="0 0 24 24" fill="none" stroke="#1A1A1A" stroke-width="1.4">
+                     <path d="M12 11c0 3.517-1.009 6.799-2.753 9.571"/><path d="M4.807 8.96A8 8 0 0 1 19.8 10.4"/><path d="M8 11a4 4 0 0 1 7.9-.8"/><path d="M15.797 14a13.026 13.026 0 0 1-2.626 3.844"/><path d="M3 14.5A16.77 16.77 0 0 0 4.2 20"/><path d="M19.8 13A13.75 13.75 0 0 1 19 17"/><path d="M6.5 19.5A15.998 15.998 0 0 0 8 21"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="progress-bar-wrap" id="progress-bar"><div class="progress-bar-inner"></div></div>
+              <p class="status-msg" id="status-msg"></p>
+              <p class="fp-hint">Demo: Simulating secure data retrieval</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hidden until Scan -->
+        <div class="card" id="card-customer">
+          <div class="card-header"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFCC00" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Customer Information</div>
+          <div class="card-body">
+            <div class="input-group"><label for="fname">First Name</label><input type="text" id="fname" placeholder="Enter first name"></div>
+            <div class="input-group"><label for="lname">Last Name</label><input type="text" id="lname" placeholder="Enter last name"></div>
+            <div class="input-group" style="margin-bottom: 0;"><label for="email">Email Address</label><input type="email" id="email" placeholder="Enter email address"></div>
+          </div>
+        </div>
+
+        <div class="card" id="card-payment">
+          <div class="card-header"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFCC00" stroke-width="2.5"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Payment Details</div>
+          <div class="card-body">
+            <div class="input-group"><label for="cardnum">Card Number</label><input type="text" id="cardnum" placeholder="1234 5678 9012 3456"></div>
+            <div style="display: flex; gap: 10px;">
+              <div class="input-group" style="flex: 1;"><label for="cardexp">Expiry</label><input type="text" id="cardexp" placeholder="MM/YY"></div>
+              <div class="input-group" style="flex: 1; margin-bottom: 0;"><label for="cardcvv">CVV</label><input type="text" id="cardcvv" placeholder="123"></div>
+            </div>
+            <!-- Dynamic Button Text -->
+            <button class="confirm-purchase-btn" id="confirm-purchase-btn" onclick="confirmPurchase()">Confirm & Pay ...</button>
+          </div>
+        </div>
+      </div>
+      <p class="footer-note">🔒 Simulated biometric payment · Ticket data loaded from API</p>
+    </div>
+
+    <!-- ══════════════════════
+         SCREEN 2 — CONFIRMATION
+    ══════════════════════ -->
+    <div id="screen-confirm" class="screen">
+      <div class="logo-bar"><img src="https://upload.wikimedia.org/wikipedia/commons/b/bf/BVG_Logo_07.2021.svg" alt="BVG Logo" /></div>
+      <div class="demo-badge">⚠ DEMO — NO REAL PAYMENT SYSTEM</div>
+
+      <div class="page-body">
+        <div class="card visible">
+          <div class="card-body" style="padding-top: 26px;">
+            <div class="confirm-circle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <h1 class="confirm-title">Payment Successful!</h1>
+            <p class="confirm-sub">Your ticket has been paid.<br>Preparing your ticket...</p>
+            <div class="confirm-amount">
+              <div class="amount-label">Amount Paid</div>
+              <!-- Dynamic Price -->
+              <div class="amount-value" id="conf-price">0,00 €</div>
+            </div>
+            <div class="detail-row"><span class="dl">Customer</span><span class="dv" id="conf-customer">—</span></div>
+            <div class="detail-row"><span class="dl">Email</span><span class="dv" id="conf-email">—</span></div>
+            <div class="detail-row"><span class="dl">Card Used</span><span class="dv" id="conf-card">—</span></div>
+            <div class="detail-row" style="border-bottom: none;"><span class="dl">Authorization</span><span class="dv">✅ Biometric</span></div>
+          </div>
+        </div>
+        <div class="countdown-wrap">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          Preparing Ticket in <span id="countdown-confirm">10</span>&nbsp;s
+        </div>
+      </div>
+      <p class="footer-note">Thank you for your purchase.</p>
+    </div>
+
+    <!-- ══════════════════════
+         SCREEN 3 — TICKET / QR
+    ══════════════════════ -->
+    <div id="screen-ticket" class="screen">
+      <div class="logo-bar"><img src="https://upload.wikimedia.org/wikipedia/commons/b/bf/BVG_Logo_07.2021.svg" alt="BVG Logo" /></div>
+      <div class="demo-badge">⚠ DEMO TICKET</div>
+
+      <div class="page-body">
+        <div class="card visible">
+          <div class="card-header">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFCC00" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg>
+            Mobile Ticket
+          </div>
+          <div class="card-body" style="padding-top: 24px;">
+            
+            <div class="qr-container">
+              <div class="qr-code-box">
+                <img id="qr-code-img" src="" alt="Ticket QR Code">
+              </div>
+              
+              <button class="download-btn" onclick="downloadTicket()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download Ticket
+              </button>
+            </div>
+
+            <div class="confirm-amount" style="margin-bottom: 14px;">
+              <div class="amount-label">Valid Ticket</div>
+              <!-- Dynamic Name -->
+              <div class="amount-value" style="font-size: 20px;" id="ticket-name-display">Ticket</div>
+            </div>
+
+            <div class="detail-row"><span class="dl">Passenger</span><span class="dv" id="ticket-user">—</span></div>
+            <div class="detail-row"><span class="dl">Valid From</span><span class="dv" id="ticket-start">—</span></div>
+            <!-- Dynamic Zone -->
+            <div class="detail-row"><span class="dl">Zones</span><span class="dv" id="ticket-zones">—</span></div>
+            <div class="detail-row"><span class="dl">Ticket ID</span><span class="dv" id="ticket-id">—</span></div>
+            
+            <div style="margin-top: 20px; text-align: center;">
+              <div class="status-pill" id="status-pill">
+                 <div class="spinner"></div>
+                 <span id="status-text">Waiting for system confirmation...</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+      <p class="footer-note">Please show this QR code to inspectors.<br>Page will redirect automatically once confirmed.</p>
+    </div>
+
+    <script>
+      // ══ DATA & CONFIG ══
+      const DUMMY_USER = { fname: "Max", lname: "Mustermann", email: "max.mustermann@example.com", cardnum: "4111 1111 1111 1111", cardexp: "12/28", cardcvv: "123" };
+      const REDIRECT_URL = "https://YOUR-REDIRECT-URL.com";
+      const API_URL = "https://6797e9d9c2c861de0c6e6bdf.mockapi.io/search";
+      
+      let timerInterval;
+      let txId;
+      let txTime;
+      let ticketData = {}; // Store API data globally
+
+      // ══ INIT & API LOAD ══
+      async function fetchTicketData() {
+        try {
+          const response = await fetch(API_URL);
+          const data = await response.json();
+          if (data && data.length > 0) {
+            ticketData = data[0];
+            updateUIWithTicketData();
+          }
+        } catch (e) {
+          console.error("Failed to fetch ticket data", e);
+        }
+      }
+
+      function updateUIWithTicketData() {
+        if (!ticketData.ticket_name) return;
+
+        // Format Price (API returns "45.00", change to "45,00 €")
+        const formattedPrice = ticketData.price.replace(".", ",") + " €";
+        
+        // Format Valid From (Date + Time)
+        const validFrom = `${ticketData.valid_from_date} ${ticketData.valid_from_time}`;
+        
+        // Format Zones
+        const zones = `Zones ${ticketData.valid_zones}`;
+
+        // --- Screen 1 Updates ---
+        document.getElementById("api-ticket-name").textContent = ticketData.ticket_name;
+        document.getElementById("api-ticket-desc").textContent = `Berlin · ${zones}`;
+        document.getElementById("api-ticket-row").textContent = ticketData.ticket_name;
+        document.getElementById("api-valid-from").textContent = validFrom;
+        document.getElementById("api-price").textContent = formattedPrice;
+        
+        // Update Button Text
+        document.getElementById("confirm-purchase-btn").textContent = `Confirm & Pay ${formattedPrice}`;
+
+        // --- Screen 2 Updates ---
+        document.getElementById("conf-price").textContent = formattedPrice;
+
+        // --- Screen 3 Updates ---
+        document.getElementById("ticket-name-display").textContent = ticketData.ticket_name;
+        document.getElementById("ticket-zones").textContent = zones;
+        // We update Valid From here again just in case
+        document.getElementById("ticket-start").textContent = validFrom;
+      }
+
+      // Run on load
+      fetchTicketData();
+      // Poll every 5 seconds for updates (Live update feature)
+      setInterval(fetchTicketData, 5000);
+
+      // ══ SCREEN 1 LOGIC ══
+      let scanning = false;
+      function startFingerprint() {
+        if (scanning) return;
+        scanning = true;
+        const btn = document.getElementById("fp-btn");
+        const wrap = document.getElementById("fp-btn-wrap");
+        const status = document.getElementById("status-msg");
+        const bar = document.getElementById("progress-bar");
+
+        btn.classList.add("ripple");
+        setTimeout(() => btn.classList.remove("ripple"), 450);
+        wrap.classList.add("scanning");
+        status.textContent = "Scanning fingerprint...";
+        status.className = "status-msg scanning";
+        bar.classList.add("visible");
+
+        setTimeout(() => {
+          wrap.classList.remove("scanning");
+          status.textContent = "✓ Identity Verified. Data loaded.";
+          status.className = "status-msg success";
+          btn.style.background = "#00843d";
+          btn.style.boxShadow = "0 4px 20px rgba(0,132,61,0.45)";
+          document.getElementById("fp-icon").innerHTML = `<polyline points="20 6 9 17 4 12" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`;
+          
+          // Show Cards
+          document.getElementById("card-customer").classList.add("visible");
+          document.getElementById("card-payment").classList.add("visible");
+          
+          // Fill Data
+          autofillInputs();
+          document.getElementById("confirm-purchase-btn").classList.add("visible");
+          scanning = false;
+        }, 1500);
+      }
+
+      function autofillInputs() {
+        const inputs = [
+          { id: 'fname', val: DUMMY_USER.fname },
+          { id: 'lname', val: DUMMY_USER.lname },
+          { id: 'email', val: DUMMY_USER.email },
+          { id: 'cardnum', val: DUMMY_USER.cardnum },
+          { id: 'cardexp', val: DUMMY_USER.cardexp },
+          { id: 'cardcvv', val: DUMMY_USER.cardcvv }
+        ];
+        inputs.forEach(inp => {
+          const el = document.getElementById(inp.id);
+          if (el) { el.value = inp.val; el.classList.add('loaded'); el.readOnly = false; }
+        });
+      }
+
+      function confirmPurchase() {
+        const fname = document.getElementById('fname').value;
+        const lname = document.getElementById('lname').value;
+        const email = document.getElementById('email').value;
+        const cardNum = document.getElementById('cardnum').value;
+        const cardMasked = "•••• " + cardNum.slice(-4);
+
+        txId = "BVG-" + Math.random().toString(36).substring(2,8).toUpperCase() + "-" + Date.now().toString().slice(-4);
+        txTime = new Date();
+
+        // Populate Screen 2
+        document.getElementById("conf-customer").textContent = `${fname} ${lname}`;
+        document.getElementById("conf-email").textContent = email;
+        document.getElementById("conf-card").textContent = cardMasked;
+
+        // Populate Screen 3
+        document.getElementById("ticket-user").textContent = `${fname} ${lname}`;
+        document.getElementById("ticket-id").textContent = txId;
+        
+        // Set QR Code
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${txId}`;
+        document.getElementById("qr-code-img").src = qrUrl;
+
+        // Start Countdown & Switch
+        switchScreen('screen-confirm', 10, moveToTicketScreen);
+      }
+
+      // ══ SCREEN MANAGEMENT ══
+      function switchScreen(screenId, seconds, callback) {
+        document.getElementById("screen-payment").classList.remove("active");
+        document.getElementById("screen-confirm").classList.remove("active");
+        document.getElementById("screen-ticket").classList.remove("active");
+        document.getElementById(screenId).classList.add("active");
+
+        const countdownEl = screenId === 'screen-confirm' ? 'countdown-confirm' : 'countdown-ticket';
+        let timeLeft = seconds;
+        const el = document.getElementById(countdownEl);
+        if(el) el.textContent = timeLeft;
+
+        timerInterval = setInterval(() => {
+          timeLeft--;
+          if(el) el.textContent = timeLeft;
+          if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            if (callback) callback();
+          }
+        }, 1000);
+      }
+
+      function moveToTicketScreen() {
+        // Re-apply API data to ticket screen just in case
+        updateUIWithTicketData();
+        
+        // Switch to Ticket Screen
+        document.getElementById("screen-confirm").classList.remove("active");
+        document.getElementById("screen-ticket").classList.add("active");
+
+        // Start Polling for Redirect
+        startPolling();
+      }
+
+      // ══ POLLING LOGIC ══
+      function startPolling() {
+        const statusText = document.getElementById("status-text");
+        const pill = document.getElementById("status-pill");
+        
+        statusText.textContent = "Waiting for system confirmation...";
+        
+        const interval = setInterval(async () => {
+          try {
+            // 1. Fetch latest data
+            const response = await fetch(API_URL);
+            const data = await response.json();
+            
+            if (data && data.length > 0) {
+              const latestTicket = data[0];
+              
+              // 2. Update UI with latest info
+              ticketData = latestTicket; // Update global state
+              updateUIWithTicketData();
+
+              // 3. Check redirect condition
+              if (latestTicket.update === true) {
+                clearInterval(interval);
+                
+                statusText.textContent = "Confirmed! Redirecting...";
+                pill.style.background = "#d4edda";
+                pill.style.color = "#155724";
+                pill.querySelector(".spinner").style.display = "none";
+                
+                // Redirect
+                setTimeout(() => {
+                   window.open(REDIRECT_URL, '_blank');
+                }, 500);
+              }
+            }
+          } catch (error) {
+            console.error("Polling error:", error);
+            statusText.textContent = "Connection error, retrying...";
+          }
+        }, 3000);
+      }
+
+      // ══ DOWNLOAD LOGIC ══
+      function downloadTicket() {
+        const img = document.getElementById("qr-code-img");
+        const link = document.createElement('a');
+        link.href = img.src;
+        link.download = 'BVGTicket_' + txId + '.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    </script>
+
+  </body>
+</html>
